@@ -53,7 +53,7 @@ class Hub
     if !myo
       throw new Error('Specified Myo not found')
 
-    baseEventHandler = @baseEventHandlers[eventData.type]
+    baseEventHandler = @events[eventData.type]
 
     if !baseEventHandler
       throw new Error('Event data type not recognized')
@@ -73,7 +73,7 @@ class Hub
     @onMessageSubscription.dispose()
     @connection.close() # not sure about that
 
-  baseEventHandlers: {
+  events: {
     arm_recognized: (myo, eventData) ->
       if myo.session
         myo.session.close()

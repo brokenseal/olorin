@@ -16,10 +16,12 @@ after(->
 describe('Hub', ->
   describe('connection', ->
     it('needs to be an instance of the base connection class', ->
-      # yup, we check the other way around since classical inheritance doesn't really work in js/cs
+      # yup, we check the other way around since classical inheritance doesn't
+      # really work in js/cs
       assert(connection.Connection.prototype.isPrototypeOf(hub.connection))
     )
-    it("should proxy all messages from the connection to its own onMessage handler", (done) ->
+    it("should proxy all messages from the connection to its own onMessage
+        handler", (done) ->
       # add a fake event handler
       myo = hub.create()
       eventName = 'fake'
@@ -38,7 +40,8 @@ describe('Hub', ->
     )
   )
   describe('#create', ->
-    it('should return a new Myo instance and register it inside the list of myos of the hub', ->
+    it('should return a new Myo instance and register it inside the list of
+        myos of the hub', ->
       myo = hub.create()
       assert(myo instanceof olorin.Myo)
       assert(hub.myos[myo.id] == myo)

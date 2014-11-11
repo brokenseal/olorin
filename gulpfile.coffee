@@ -6,7 +6,8 @@ mocha = require('gulp-mocha')
 coffeelint = require('gulp-coffeelint')
 
 gulp.task('coffee', ->
-  # compiles all coffee script files from src to lib, adding source maps as well
+  # compiles all coffee script files from src to lib, adding source maps as
+  # well
   gulp.src('src/*.coffee')
     .pipe(sourceMaps.init())
     .pipe(coffee({bare: true}).on('error', gulpUtil.log))
@@ -19,15 +20,15 @@ gulp.task('test', ->
 )
 
 gulp.task('lint', ->
-  gulp.src('src/*.coffee')
+  gulp.src('*/**.coffee')
     .pipe(coffeelint())
     .pipe(coffeelint.reporter())
 )
 
 gulp.task('build', ->
-  console.log('build: todo');
+  console.log('build: todo')
 )
 
-gulp.task('default', ['lint', 'coffee', 'test', 'build'], ->
-  console.log('Done.');
+gulp.task('default', ['lint', 'test', 'coffee', 'build'], ->
+  console.log('Done.')
 )
