@@ -29,6 +29,8 @@ describe('Hub', ->
             }
 
             hub.baseEventHandlers[eventName] = (myo, eventData) ->
+                assert(eventData == eventData)
+                hub.baseEventHandlers[eventName] = null
                 done()
 
             # trigger the event from the socket

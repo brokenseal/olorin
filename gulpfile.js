@@ -18,6 +18,6 @@ gulp.task('coffee', function(){
         .pipe(gulp.dest('lib/'));
 });
 
-gulp.task('mocha', function(){
+gulp.task('test', function(){
     gulp.src('test/*.coffee', {read: false}).pipe(mocha({reporter: 'nyan'}));
 });
