@@ -1,52 +1,62 @@
 "use strict"
 
-underscore = _ = require('underscore')
-WebSocket = require('ws');
+_ = require('underscore')
+events = require('./events')
+connection = require('./connection')
 
 
-class Myo
+class Myo extends events.Events
     defaultConfiguration = {}
     _id = 0
 
+    # Myo constructor
+    # @param {object} configuration
     constructor: (configuration) ->
+        super
         @configuration = _.extend({}, Myo.defaultConfiguration, configuration)
-        @id = Myo._id++ # not sure about this one
+        @id = _id++  # not sure about this one
         @session = null
-
-    on: (eventName, listener) ->
-        # do something
-
-    off: (eventName) ->
-        # do something
-
-    trigger: (event) ->
-        if @.session
-            # every time an event is fired, keep track of it on the session
-            @.session.eventsQueue.push(event)
-        # do something
 
     destroy: () ->
         @trigger('destroy')
-        # one day I'll add something here
 
 
 class Session
-    # session will hold user specific data as well
+    # Session constructor
+    # @param {Myo} myo
+    # @param {String} arm {left|right}
+    # @param {String} direction # not sure about this one
     constructor: (@myo, @arm, @direction) ->
         @pose = null
         @eventsQueue = []
 
-    close: () ->
-        # do something
+    initialize: () ->
+        # here I want to add an initialization of the user session on the armband, registering common actions just to
+        # know the user better and adapt to his habits
+        # every person has a different strength when performing different actions, registering commong actions will
+        # make it easier to adapt actions based on user's sensitivity
 
 
 class Hub
-    defaultConfiguration = {}
-
-    constructor: (configuration) ->
-        @configuration = _.extend({}, @defaultConfiguration, configuration)
-        @connection = new Connection(@)
+    # Hub constructor
+    # An hub is responsible to keep track of all the myos created and to deliver messages to the correct myo
+    # @param {Connection} connection
+    constructor: (@connection) ->
         @myos = {}
+        @onMessageSubscription = @connection.on('message', @onMessage)
+
+    onMessage: (eventData) =>
+        myo = @myos[eventData.myo]
+
+        if !myo
+            throw new Error('Specified Myo not found')
+
+        baseEventHandler = @baseEventHandlers[eventData.type]
+
+        if !baseEventHandler
+            throw new Error('Event data type not recognized')
+
+        baseEventHandler(myo, eventData)
 
     create: (configuration) ->
         newMyo = new Myo(configuration)
@@ -58,65 +68,30 @@ class Hub
         return newMyo
 
     destroy: () ->
+        @onMessageSubscription.dispose()
         @connection.close() # not sure about that
 
-
-class Connection
-    # a very simple wrapper class around the web socket connection
-    defaultConfiguration: {
-        socketUrl: "ws://127.0.0.1:10138/myo/"
-        apiVersion: 1
-    }
-    messageTypes: {
-        event: 'event'
-    }
-
-    constructor: (hub, configuration) ->
-        @hub = hub
-        @configuration = _.extend({}, @defaultConfiguration, configuration)
-        @socket = new WebSocket(@configuration.socketUrl)
-        @socket.onmessage = @onMessage
-
-    onMessage: (message) =>
-        data = JSON.parse(message.data)
-        messageType = data[0]
-        eventData = data[1]
-        myo = @hub.myos[eventData.myo]
-        baseEventHandler = Event.baseEventHandlers[eventData.type]
-
-        if(messageType == @messageTypes.event && myo && baseEventHandler)
-            baseEventHandler(myo, eventData)
-        else
-            throw new Error('Unknown message received: ' + message.toString())
-
-    close: () ->
-        @socket.close() # not sure about that
-
-
-class Event
-    constructor: (@name, @data) ->
-
-    @baseEventHandlers = {
+    baseEventHandlers: {
         arm_recognized: (myo, eventData) ->
             if myo.session
                 myo.session.close()
 
             myo.session = new Session(@, eventData.arm, eventData.x_direction)
-            myo.trigger(new Event('arm_recognized'))
+            myo.trigger(new events.Event('arm_recognized'))
 
         arm_lost: (myo, eventData) ->
             if myo.session
                 myo.session.close()
 
             myo.session = null
-            myo.trigger(new Event('arm_lost'))
+            myo.trigger(new events.Event('arm_lost'))
 
         pose: (myo, eventData) ->
             if not myo.session
                 throw new Error('No session found')
 
             myo.session.pose = eventData.pose
-            myo.trigger(new Event('pose', eventData.pose))
+            myo.trigger(new events.Event('pose', eventData.pose))
 
         orientation: (myo, eventData) ->
             # add an offset to the orientation data?
@@ -141,24 +116,24 @@ class Event
                 accelerometer: accelerometerData
                 orientation: orientationData
             }
-            myo.trigger(new Event('orientation', orientationData))
-            myo.trigger(new Event('gyroscope', gyroscopeData))
-            myo.trigger(new Event('accelerometer', accelerometerData))
-            myo.trigger(new Event('imu', imuData))
+            myo.trigger(new events.Event('orientation', orientationData))
+            myo.trigger(new events.Event('gyroscope', gyroscopeData))
+            myo.trigger(new events.Event('accelerometer', accelerometerData))
+            myo.trigger(new events.Event('imu', imuData))
 
         rssi: (myo, eventData) ->
-            myo.trigger(new Event('bluetooth_strength', eventData.rssi))
+            myo.trigger(new events.Event('bluetooth_strength', eventData.rssi))
 
         connected: (myo, eventData) ->
-    #            myo.connect_version = data.version.join('.');
-            myo.trigger(new Event('connected'))
+#            myo.connect_version = data.version.join('.');
+            myo.trigger(new events.Event('connected'))
 
         disconnected: (myo, eventData) ->
             # destry myo instance?
-            myo.trigger(new Event('disconnected'))
+            myo.trigger(new events.Event('disconnected'))
     }
 
 _.extend(exports, {
-    Hub: Hub,
+    Hub: Hub
     Myo: Myo
 });

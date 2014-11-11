@@ -4,23 +4,20 @@ var gulp = require('gulp'),
     sourceMaps = require('gulp-sourcemaps'),
     mocha = require('gulp-mocha');
 
+require('coffee-script/register');
+
 gulp.task('default', function() {
     console.log('default');
 });
 
 gulp.task('coffee', function(){
-    var compile = function compile_coffeeTask(src){
-        src.pipe(sourceMaps.init())
-            .pipe(coffee({bare: true}).on('error', gulpUtil.log))
-            .pipe(sourceMaps.write());
-
-        return src
-    };
-
-    compile(gulp.src('src/*.coffee')).pipe(gulp.dest('lib/'));
-    compile(gulp.src('test/*.coffee')).pipe(gulp.dest('test/'));
+    gulp.src('src/*.coffee')
+        .pipe(sourceMaps.init())
+        .pipe(coffee({bare: true}).on('error', gulpUtil.log))
+        .pipe(sourceMaps.write())
+        .pipe(gulp.dest('lib/'));
 });
 
-gulp.task('mocha', ['coffee'], function(){
-    gulp.src('test/*.js', {read: false}).pipe(mocha({reporter: 'nyan'}));
+gulp.task('mocha', function(){
+    gulp.src('test/*.coffee', {read: false}).pipe(mocha({reporter: 'nyan'}));
 });
