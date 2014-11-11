@@ -1,8 +1,10 @@
 "use strict"
 
 _ = require('underscore')
+settings = require('./settings')
 events = require('./events')
 WebSocket = require('ws')
+
 
 class Connection extends events.Events
   # Connection constructor
@@ -13,13 +15,14 @@ class Connection extends events.Events
     super
     @configuration = _.extend({}, @defaultConfiguration, configuration)
     @url = @configuration.socketUrl + @configuration.apiVersion
-    @socket = new @SocketClass(@configuration.socketUrl)
+    console.log('connecting to:', @url)
+    @socket = new @SocketClass(@url)
     @socket.onmessage = @onMessage
 
   SocketClass: WebSocket
   defaultConfiguration: {
-    socketUrl: "ws://127.0.0.1:10138/myo/"
-    apiVersion: 1
+    socketUrl: settings.conf.socketUrl
+    apiVersion: settings.conf.apiVersion
   }
   messageTypes: {
     event: 'event'
@@ -34,6 +37,10 @@ class Connection extends events.Events
       throw new Error('Unknown message received: ' + message.toString())
 
     @trigger('message', eventData)
+
+  send: (message) ->
+    console.log(message)
+    @socket.send(message)
 
   close: () ->
     @socket.close() # not sure about that

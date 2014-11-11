@@ -1,8 +1,9 @@
 assert = require("assert")
-olorin = require("../src/olorin")
-connection = require("../src/connection")
+events = require("../../src/events")
+olorin = require("../../src/olorin")
+connection = require("../../src/connection")
 sinon = require("sinon")
-helpers = require("./helpers")
+helpers = require("./../helpers")
 
 hub = null
 
@@ -30,15 +31,16 @@ describe('Hub', ->
         data: JSON.stringify([hub.connection.messageTypes.event, eventData])
       }
 
-      hub.baseEventHandlers[eventName] = (myo, eventData) ->
+      events.supportedEvents[eventName] = (myo, eventData) ->
         assert(eventData == eventData)
-        hub.baseEventHandlers[eventName] = null
+        events.supportedEvents[eventName] = null
         done()
 
       # trigger the event from the socket
       hub.connection.socket.message(message)
     )
   )
+
   describe('#create', ->
     it('should return a new Myo instance and register it inside the list of
         myos of the hub', ->
@@ -48,6 +50,7 @@ describe('Hub', ->
     )
   )
 )
+
 describe('Myo', ->
   describe('a new instance', ->
     it('should trigger a `destroy` event on destroy', (done)->
@@ -57,6 +60,7 @@ describe('Myo', ->
       )
       myo.destroy()
     )
+
     it('should remove itself from the list of myos on the hub on destroy', ->
       myo = hub.create()
       myo.destroy()

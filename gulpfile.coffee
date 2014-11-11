@@ -16,11 +16,14 @@ gulp.task('coffee', ->
 )
 
 gulp.task('test', ->
-  gulp.src('test/*.coffee', {read: false}).pipe(mocha({reporter: 'nyan'}))
+  gulp.src([
+    'test/unit/*.coffee'
+#    'test/integration/*.coffee'
+  ], {read: false}).pipe(mocha({reporter: 'nyan'}))
 )
 
 gulp.task('lint', ->
-  gulp.src('*/**.coffee')
+  gulp.src('*/*.coffee')
     .pipe(coffeelint())
     .pipe(coffeelint.reporter())
 )

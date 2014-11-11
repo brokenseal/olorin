@@ -9,6 +9,7 @@ class FakeWebSocket
   message: (args...) ->
     @onmessage(args...)
 
+  send: () ->
   close: () ->
 
 
