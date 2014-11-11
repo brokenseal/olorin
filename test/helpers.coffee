@@ -3,19 +3,19 @@ connection = require("../src/connection")
 
 
 class FakeWebSocket
-    constructor: (@url) ->
-        @onmessage = null
+  constructor: (@url) ->
+    @onmessage = null
 
-    message: (args...) ->
-        @onmessage(args...)
+  message: (args...) ->
+    @onmessage(args...)
 
-    close: () ->
+  close: () ->
 
 
 class FakeConnection extends connection.Connection
-    SocketClass: FakeWebSocket
+  SocketClass: FakeWebSocket
 
 
 _.extend(exports, {
-    FakeConnection: FakeConnection
+  FakeConnection: FakeConnection
 })

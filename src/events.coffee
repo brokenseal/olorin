@@ -1,47 +1,53 @@
+"use strict"
+
 _ = require('underscore')
 
 
 class Subscription
-    constructor: (@callback, @index, @subscriptionList) ->
+  constructor: (@callback, @index, @subscriptionList) ->
 
-    invoke: (args...)->
-        @callback(args...)
+  invoke: (args...)->
+    @callback(args...)
 
-    dispose: ->
-        @subscriptionList.splice(@index, 0)
+  dispose: ->
+    @subscriptionList.splice(@index, 0)
 
 
 class Events
-    constructor: () ->
-        @events = {}
+  constructor: () ->
+    @events = {}
 
-    on: (eventName, listener) ->
-        if !@events[eventName]
-            !@events[eventName] = []  # new subscription list for this new event
+  on: (eventName, listener) ->
+    if !@events[eventName]
+      !@events[eventName] = []  # new subscription list for this new event
 
-        subscriptionList = @events[eventName]
-        subscription = new Subscription(listener, subscriptionList.length, subscriptionList)
-        subscriptionList.push(subscription)
-        return subscription
+    subscriptionList = @events[eventName]
+    subscription = new Subscription(
+      listener,
+      subscriptionList.length,
+      subscriptionList
+    )
+    subscriptionList.push(subscription)
+    return subscription
 
-    trigger: (eventName, args...) ->
-        subscriptionList = @events[eventName] || []
-        len = subscriptionList.length
+  trigger: (eventName, args...) ->
+    subscriptionList = @events[eventName] || []
+    len = subscriptionList.length
 
-        while len--
-            subscription = subscriptionList[len]
-            subscription.invoke(args...)
+    while len--
+      subscription = subscriptionList[len]
+      subscription.invoke(args...)
 
-    off: (eventName) ->
-        @events[eventName] = []
+  off: (eventName) ->
+    @events[eventName] = []
 
 
 class Event
-    constructor: (@name, @data) ->
+  constructor: (@name, @data) ->
 
 
 _.extend(exports, {
-    Event: Event
-    Events: Events
-    Subscription: Subscription
+  Event: Event
+  Events: Events
+  Subscription: Subscription
 })
