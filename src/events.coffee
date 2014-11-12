@@ -155,10 +155,10 @@ class ExtendedProxyEventManager extends ProxyEventManager
     # add an offset to the orientation data?
     state = myo.session.extra
     orientationData = {
-      x: eventData.orientation.x# - state.orientationOffset.x
-      y: eventData.orientation.y# - state.orientationOffset.y
-      z: eventData.orientation.z# - state.orientationOffset.z
-      w: eventData.orientation.w# - state.orientationOffset.w
+      x: eventData.orientation.x - state.zeroOrientationOffset.x
+      y: eventData.orientation.y - state.zeroOrientationOffset.y
+      z: eventData.orientation.z - state.zeroOrientationOffset.z
+      w: eventData.orientation.w - state.zeroOrientationOffset.w
     }
     gyroscopeData = {
       x: eventData.gyroscope[0]
@@ -205,7 +205,7 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
           threshold: 0.9
           time: [80, 300]
         }
-        lastOrientationData: {x: 0, y: 0, z: 0, w: 0}
+        zeroOrientationOffset: {x: 0, y: 0, z: 0, w: 0}
       })
 
   accelerometer: (myo, eventData) ->
@@ -238,7 +238,6 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
   imu: (myo, eventData) ->
     # add slap_left event
     myo.session.extra.lastIMU = eventData
-
     super
     eventData = eventData.orientation
 
