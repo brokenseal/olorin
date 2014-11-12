@@ -6,15 +6,16 @@ connection = require('./connection')
 
 
 class Myo extends events.Events
-  defaultConfiguration = {}
-  _id = 0
+  @defaultConfiguration = {}
+  @id = 0
 
   # Myo constructor
+  # @param {Hub} hub
   # @param {object} configuration
   constructor: (@hub, configuration) ->
     super
     @configuration = _.extend({}, Myo.defaultConfiguration, configuration)
-    @id = _id++  # not sure about this one
+    @id = Myo.id++  # not sure about this one
     @session = null
 
   vibrate: (intensity='medium') ->
@@ -25,7 +26,7 @@ class Myo extends events.Events
   requestBluetoothStrength: ->
     @trigger('command', 'request_rssi')
 
-  destroy: () ->
+  destroy: ->
     @trigger('destroy')
 
 
@@ -42,7 +43,7 @@ class Hub
   onMessage: (eventData) =>
     myo = @myos[eventData.myo]
 
-    if !myo
+    if not myo
       throw new Error('Specified Myo not found')
 
     @proxyEventManager.handle(myo, eventData)
@@ -65,7 +66,7 @@ class Hub
     ))
     return newMyo
 
-  destroy: () ->
+  destroy: ->
     @subscriptions.forEach((subscription)->
       subscription.dispose()
     )

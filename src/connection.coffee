@@ -33,7 +33,7 @@ class Connection extends events.Events
     messageType = data[0]
     eventData = data[1]
 
-    if messageType != @messageTypes.event
+    if messageType isnt @messageTypes.event
       throw new Error('Unknown message received: ' + message.toString())
 
     @trigger('message', eventData)
@@ -42,7 +42,7 @@ class Connection extends events.Events
     console.log(message)
     @socket.send(message)
 
-  close: () ->
+  close: ->
     @socket.close() # not sure about that
 
 _.extend(exports, {

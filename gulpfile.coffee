@@ -23,7 +23,7 @@ gulp.task('test', ->
 )
 
 gulp.task('lint', ->
-  gulp.src('*/*.coffee')
+  gulp.src(['src/*.coffee', 'test/*.coffee', 'test/*/*.coffee'])
     .pipe(coffeelint())
     .pipe(coffeelint.reporter())
 )

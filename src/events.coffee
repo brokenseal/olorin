@@ -11,7 +11,7 @@ class Session
     @pose = null
     @messagesQueue = []
 
-  initialize: () ->
+  initialize: ->
     # here I want to add an initialization of the user session on the armband,
     # registering common actions just to know the user better and adapt to his
     # habits every person has a different strength when performing different
@@ -33,12 +33,12 @@ class Subscription
 
 
 class Events
-  constructor: () ->
+  constructor: ->
     @events = {}
 
   on: (eventName, listener) ->
-    if !@events[eventName]
-      !@events[eventName] = []  # new subscription list for this new event
+    if not @events[eventName]
+      @events[eventName] = []  # new subscription list for this new event
 
     subscriptionList = @events[eventName]
     subscription = new Subscription(
@@ -50,7 +50,7 @@ class Events
     return subscription
 
   trigger: (eventName, args...) ->
-    subscriptionList = @events[eventName] || []
+    subscriptionList = @events[eventName] or []
     len = subscriptionList.length
 
     while len--
@@ -74,7 +74,7 @@ class ProxyEventManager
     handler.call(@, myo, eventData)
 
   initSession: (myo, eventData) ->
-    if !myo.session
+    if not myo.session
       myo.session = new Session(eventData.arm, eventData.x_direction)
       return false
     return true
@@ -86,7 +86,7 @@ class ProxyEventManager
     myo.session = null
 
   getHandler: (eventType) ->
-    return @[eventType] || @.default
+    return @[eventType] or @.default
 
   # handlers
   arm_recognized: (myo, eventData) ->
@@ -199,7 +199,7 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
       if myo.session.last_tap
         diff = new Date().getTime() - myo.session.last_tap
 
-        if diff > doubleTapOptions.time[0] && diff < doubleTapOptions.time[1]
+        if diff > doubleTapOptions.time[0] and diff < doubleTapOptions.time[1]
           @double_tap(myo, eventData)
 
       myo.session.last_tap = new Date().getTime()
@@ -210,13 +210,13 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
 
     sensRight = (20 + myo.session.sensitivity) * -1
 
-    if eventData.x < sensRight && !myo.session.wasRight
+    if eventData.x < sensRight and not myo.session.wasRight
       myo.session.wasRight = true
       return
 
     sensLeft = 80 + (myo.session.sensitivity * 2)
 
-    if eventData.x > sensLeft && myo.session.wasRight
+    if eventData.x > sensLeft and myo.session.wasRight
       @slap_left(myo, eventData)
       myo.session.wasRight = false
 

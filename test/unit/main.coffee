@@ -8,7 +8,10 @@ helpers = require("./../helpers")
 hub = null
 
 before(->
-  hub = new olorin.Hub(new helpers.FakeConnection())
+  hub = new olorin.Hub(
+    new helpers.FakeConnection()
+    new helpers.FakeProxyEventManager()
+  )
 )
 after(->
   hub.destroy()
@@ -31,9 +34,9 @@ describe('Hub', ->
         data: JSON.stringify([hub.connection.messageTypes.event, eventData])
       }
 
-      events.supportedEvents[eventName] = (myo, eventData) ->
-        assert(eventData == eventData)
-        events.supportedEvents[eventName] = null
+      hub.proxyEventManager[eventName] = (myo, data) ->
+        assert(data.type == eventData.type)
+        assert(data.test == eventData.test)
         done()
 
       # trigger the event from the socket
@@ -46,7 +49,7 @@ describe('Hub', ->
         myos of the hub', ->
       myo = hub.create()
       assert(myo instanceof olorin.Myo)
-      assert(hub.myos[myo.id] == myo)
+      assert(hub.myos[myo.id] is myo)
     )
   )
 )
@@ -64,7 +67,7 @@ describe('Myo', ->
     it('should remove itself from the list of myos on the hub on destroy', ->
       myo = hub.create()
       myo.destroy()
-      assert(!hub.myos[myo.id])
+      assert(not hub.myos[myo.id])
     )
   )
 )
