@@ -235,34 +235,34 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
 
       state.last_tap = new Date().getTime()
 
-  imu: (myo, eventData) ->
-    # add slap_left event
-    myo.session.extra.lastIMU = eventData
-    super
-    eventData = eventData.orientation
-
-    state = myo.session.extra
-    sensRight = (20 + state.sensitivity) * -1
-
-    if eventData.x < sensRight and not state.wasRight
-      state.wasRight = true
-      return
-
-    sensLeft = 80 + (state.sensitivity * 2)
-
-    if eventData.x > sensLeft and state.wasRight
-      # trigger slap left event
-      @slap_left(myo, eventData)
-      state.wasRight = false
+#  imu: (myo, eventData) ->
+#    # add slap_left event
+#    myo.session.extra.lastIMU = eventData
+#    super
+#    eventData = eventData.orientation
+#
+#    state = myo.session.extra
+#    sensRight = (20 + state.sensitivity) * -1
+#
+#    if eventData.x < sensRight and not state.wasRight
+#      state.wasRight = true
+#      return
+#
+#    sensLeft = 80 + (state.sensitivity * 2)
+#
+#    if eventData.x > sensLeft and state.wasRight
+#      # trigger slap left event
+#      @slap_left(myo, eventData)
+#      state.wasRight = false
+#
+#  slap_left: (myo, eventData) ->
+#    myo.trigger('slap_left', eventData)
 
   double_tap: (myo, eventData) ->
     myo.trigger('double_tap', eventData)
 
     # also reset myo's orientation ?
     myo.zeroOrientation()
-
-  slap_left: (myo, eventData) ->
-    myo.trigger('slap_left', eventData)
 
 
 _.extend(exports, {
