@@ -102,6 +102,6 @@
         "doubleNotLevel": "ignore"
     },
     "space_operators": {
-        "level": "warn"
+        "level": "ignore"
     }
 }

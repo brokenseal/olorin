@@ -3,13 +3,33 @@
 _ = require('underscore')
 
 
+class MessageQueue
+  constructor: (@limit=1000)->
+    @queue = []
+
+  purge: ->
+    if @queue.length > @limit
+      @queue.splice(@limit, @queue.length - @limit)
+
+  push: (object) ->
+    @purge()
+    return @queue.push(object)
+
+  getLastItems: (length=100) ->
+    return @queue.slice(0, length)
+
+
 class Session
   # Session constructor
   # @param {String} arm {left|right}
   # @param {String} direction # not sure about this one
-  constructor: (@arm, @direction) ->
+  constructor: (@messageQueueLimit) ->
     @pose = null
-    @messagesQueue = []
+    @messagesQueue = new MessageQueue(@messageQueueLimit)
+    @arm = @direction = @version = @connectedTimestamp = @armRecognizedTimestamp = null
+
+    # this object can be used by custom events to store additional data
+    @extra = {}
 
   initialize: ->
     # here I want to add an initialization of the user session on the armband,
@@ -18,8 +38,13 @@ class Session
     # actions, registering commong actions will make it easier to adapt
     # actions based on user's sensitivity
 
+  onConnected: (version, @connectedTimestamp) ->
+    @version = version.join('.')
+
+  onArmRecognized: (@arm, @direction, @armRecognizedTimestamp) ->
+
   close: ->
-    # do something
+    # do something? empty the message queue?
 
 
 class Subscription
@@ -70,12 +95,13 @@ class ProxyEventManager
   # a myo can recognize
   handle: (myo, eventData) ->
     @initSession(myo, eventData)
+    myo.session.messagesQueue.push(eventData)
     handler = @getHandler(eventData.type)
     handler.call(@, myo, eventData)
 
   initSession: (myo, eventData) ->
     if not myo.session
-      myo.session = new Session(eventData.arm, eventData.x_direction)
+      myo.session = new Session()
       return false
     return true
 
@@ -90,10 +116,11 @@ class ProxyEventManager
 
   # handlers
   arm_recognized: (myo, eventData) ->
+    myo.session.onArmRecognized(eventData.arm, eventData.x_direction, eventData.timestamp)
     myo.trigger('arm_recognized', eventData)
 
   arm_lost: (myo, eventData) ->
-    @removeSession()
+    @removeSession(myo)
     myo.trigger('arm_lost', eventData)
 
   paired: (myo, eventData) ->
@@ -110,12 +137,12 @@ class ProxyEventManager
     myo.trigger('bluetooth_strength', eventData.rssi)
 
   connected: (myo, eventData) ->
-#      myo.connect_version = data.version.join('.')
+    myo.session.onConnected(eventData.version, eventData.timestamp)
     myo.trigger('connected', eventData)
 
   disconnected: (myo, eventData) ->
     # destroy myo instance?
-    @removeSession()
+    @removeSession(myo)
     myo.trigger('disconnected', eventData)
 
   default: (myo, eventData) ->
@@ -126,11 +153,12 @@ class ExtendedProxyEventManager extends ProxyEventManager
   orientation: (myo, eventData) ->
     # completely overrides parent's orientation method
     # add an offset to the orientation data?
+    state = myo.session.extra
     orientationData = {
-      x: eventData.orientation.x
-      y: eventData.orientation.y
-      z: eventData.orientation.z
-      w: eventData.orientation.w
+      x: eventData.orientation.x# - state.orientationOffset.x
+      y: eventData.orientation.y# - state.orientationOffset.y
+      z: eventData.orientation.z# - state.orientationOffset.z
+      w: eventData.orientation.w# - state.orientationOffset.w
     }
     gyroscopeData = {
       x: eventData.gyroscope[0]
@@ -147,8 +175,9 @@ class ExtendedProxyEventManager extends ProxyEventManager
       accelerometer: accelerometerData
       orientation: orientationData
     }
-    myo.trigger('orientation', orientationData)
+    state.lastOrientationData = orientationData
 
+    super(myo, orientationData)
     @gyroscope(myo, gyroscopeData)
     @accelerometer(myo, accelerometerData)
     @imu(myo, imuData)
@@ -164,64 +193,74 @@ class ExtendedProxyEventManager extends ProxyEventManager
 
 
 class ExperimentalProxyEventManager extends ExtendedProxyEventManager
-  initSession: (myo, eventData) ->
+  initSession: (myo) ->
     hadSession = super
 
     if not hadSession
-      myo.session.wasRight = false
-      myo.session.sensitivity = 20
-      myo.session.lastIMU = null
-      myo.session.doubleTap = {
-        threshold: 0.9
-        time: [80, 300]
-      }
-
-  imu: (myo, eventData) ->
-    myo.session.lastIMU = eventData
-    super
+      _.extend(myo.session.extra, {
+        wasRight: false
+        sensitivity: 20
+        lastIMU: null
+        doubleTap: {
+          threshold: 0.9
+          time: [80, 300]
+        }
+        lastOrientationData: {x: 0, y: 0, z: 0, w: 0}
+      })
 
   accelerometer: (myo, eventData) ->
     # add double_tap event
     # all rights for this event go to stolksdorf ( https://github.com/stolksdorf/myo.js.git )
     super
 
-    if not myo.session.lastIMU
+    state = myo.session.extra
+
+    if not state.lastIMU
       return
 
-    doubleTapOptions = myo.session.doubleTap
-    last = myo.session.lastIMU.accelerometer
+    doubleTapOptions = state.doubleTap
+    last = state.lastIMU.accelerometer
 
     y = Math.abs(eventData.y)
     z = Math.abs(eventData.z)
     delta = Math.abs(Math.abs(last.y) - y) + Math.abs(Math.abs(last.z) - z)
 
     if delta > doubleTapOptions.threshold
-      if myo.session.last_tap
-        diff = new Date().getTime() - myo.session.last_tap
+      if state.last_tap
+        diff = new Date().getTime() - state.last_tap
 
         if diff > doubleTapOptions.time[0] and diff < doubleTapOptions.time[1]
+          # trigger double tap event
           @double_tap(myo, eventData)
 
-      myo.session.last_tap = new Date().getTime()
+      state.last_tap = new Date().getTime()
 
-  gyroscope: (myo, eventData) ->
+  imu: (myo, eventData) ->
     # add slap_left event
+    myo.session.extra.lastIMU = eventData
+
     super
+    eventData = eventData.orientation
 
-    sensRight = (20 + myo.session.sensitivity) * -1
+    state = myo.session.extra
+    sensRight = (20 + state.sensitivity) * -1
 
-    if eventData.x < sensRight and not myo.session.wasRight
-      myo.session.wasRight = true
+    if eventData.x < sensRight and not state.wasRight
+      state.wasRight = true
       return
 
-    sensLeft = 80 + (myo.session.sensitivity * 2)
+    sensLeft = 80 + (state.sensitivity * 2)
 
-    if eventData.x > sensLeft and myo.session.wasRight
+    if eventData.x > sensLeft and state.wasRight
+      # trigger slap left event
       @slap_left(myo, eventData)
-      myo.session.wasRight = false
+      state.wasRight = false
 
   double_tap: (myo, eventData) ->
     myo.trigger('double_tap', eventData)
+
+    # also reset myo's orientation ?
+    myo.zeroOrientation()
 
   slap_left: (myo, eventData) ->
     myo.trigger('slap_left', eventData)

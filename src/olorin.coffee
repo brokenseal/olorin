@@ -26,6 +26,12 @@ class Myo extends events.Events
   requestBluetoothStrength: ->
     @trigger('command', 'request_rssi')
 
+  zeroOrientation: ->
+    # set current orientation as the starting point for all future orientation calculations
+    if @session?.extra.lastOrientationData
+      @session.extra.zeroOrientationOffset = @session.extra.lastOrientationData
+    @trigger('zero_orientation')
+
   destroy: ->
     @trigger('destroy')
 
@@ -35,9 +41,18 @@ class Hub
   # An hub is responsible to keep track of all the myos created and to deliver
   # messages to the correct myo
   # @param {Connection} connection
-  constructor: (@connection, @proxyEventManager) ->
+  constructor: ({@connection, @proxyEventManager}) ->
     @myos = {}
     @subscriptions = []
+
+    if not @connection
+      # add a default connection to this hub
+      @connection = new connection.Connection()
+
+    if not @proxyEventManager
+      # add a default prxy event manage to this hub
+      @proxyEventManager = new events.ProxyEventManager()
+
     @subscriptions.push(@connection.on('message', @onMessage))
 
   onMessage: (eventData) =>

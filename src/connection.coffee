@@ -15,7 +15,6 @@ class Connection extends events.Events
     super
     @configuration = _.extend({}, @defaultConfiguration, configuration)
     @url = @configuration.socketUrl + @configuration.apiVersion
-    console.log('connecting to:', @url)
     @socket = new @SocketClass(@url)
     @socket.onmessage = @onMessage
 

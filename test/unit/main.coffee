@@ -8,10 +8,10 @@ helpers = require("./../helpers")
 hub = null
 
 before(->
-  hub = new olorin.Hub(
-    new helpers.FakeConnection()
-    new helpers.FakeProxyEventManager()
-  )
+  hub = new olorin.Hub({
+    connection: new helpers.FakeConnection()
+    proxyEventManager: new helpers.FakeProxyEventManager()
+  })
 )
 after(->
   hub.destroy()
@@ -35,8 +35,8 @@ describe('Hub', ->
       }
 
       hub.proxyEventManager[eventName] = (myo, data) ->
-        assert(data.type == eventData.type)
-        assert(data.test == eventData.test)
+        assert(data.type is eventData.type)
+        assert(data.test is eventData.test)
         done()
 
       # trigger the event from the socket
