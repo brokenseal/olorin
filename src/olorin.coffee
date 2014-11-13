@@ -82,9 +82,7 @@ class Hub
     return newMyo
 
   destroy: ->
-    @subscriptions.forEach((subscription)->
-      subscription.dispose()
-    )
+    subscription.dispose() for subscription in @subscriptions
     @connection.close() # not sure about that
 
 

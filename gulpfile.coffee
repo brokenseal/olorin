@@ -22,9 +22,12 @@ gulp.task('test', ->
 )
 
 gulp.task('lint', ->
-  gulp.src(['src/*.coffee', 'test/*.coffee', 'test/*/*.coffee'])
+  gulp.src(['*.coffee', 'src/*.coffee', 'test/*.coffee', 'test/*/*.coffee'])
     .pipe(coffeelint())
     .pipe(coffeelint.reporter())
+)
+gulp.task('watch', ->
+  gulp.watch('src/*.coffee', ['test'])
 )
 
 gulp.task('build', ->
