@@ -4,6 +4,8 @@ gulpUtil = require('gulp-util')
 sourceMaps = require('gulp-sourcemaps')
 mocha = require('gulp-mocha')
 coffeelint = require('gulp-coffeelint')
+coffeeify = require('gulp-coffeeify')
+
 
 gulp.task('coffee', ->
   # compiles all coffee script files from src to lib, adding source maps as well
@@ -11,7 +13,13 @@ gulp.task('coffee', ->
     .pipe(sourceMaps.init())
     .pipe(coffee({bare: true}).on('error', gulpUtil.log))
     .pipe(sourceMaps.write())
-    .pipe(gulp.dest('lib/'))
+    .pipe(gulp.dest('build/node'))
+)
+
+gulp.task('browserify', ->
+  gulp.src('src/olorin.coffee')
+    .pipe(coffeeify())
+    .pipe(gulp.dest('build/browser'))
 )
 
 gulp.task('test', ->
@@ -26,14 +34,15 @@ gulp.task('lint', ->
     .pipe(coffeelint())
     .pipe(coffeelint.reporter())
 )
+
 gulp.task('watch', ->
   gulp.watch('src/*.coffee', ['test'])
 )
 
-gulp.task('build', ->
-  console.log('build: todo')
+gulp.task('build', ['coffee', 'browserify'], ->
+  console.log('Done.')
 )
 
-gulp.task('default', ['lint', 'test', 'coffee', 'build'], ->
+gulp.task('default', ['lint', 'test', 'build'], ->
   console.log('Done.')
 )
