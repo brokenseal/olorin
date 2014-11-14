@@ -45,8 +45,7 @@ describe('Hub', ->
   )
 
   describe('#create', ->
-    it('should return a new Myo instance and register it inside the list of
-        myos of the hub', ->
+    it('should return a new Myo instance and register it inside the list of myos of the hub', ->
       myo = hub.create()
       assert(myo instanceof olorin.Myo)
       assert(hub.myos[myo.id] is myo)

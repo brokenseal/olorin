@@ -74,6 +74,13 @@ class Events
     subscriptionList.push(subscription)
     return subscription
 
+  once: (eventName, listener) ->
+    subscription = @on(eventName, (args...)->
+      subscription.dispose()
+      listener(args...)
+    )
+    return subscription
+
   trigger: (eventName, args...) ->
     subscriptionList = @events[eventName] or []
     len = subscriptionList.length
@@ -93,6 +100,8 @@ class ProxyEventManager
   # It's also responsible to create sessions and update them, on myo instances
   # By inheriting from this class, it is possible to extend the list of events
   # a myo can recognize
+  constructor: (@debounceTriggerBy=1000) ->
+
   handle: (myo, eventData) ->
     @initSession(myo, eventData)
     myo.session.messagesQueue.push(eventData)
@@ -114,36 +123,39 @@ class ProxyEventManager
   getHandler: (eventType) ->
     return @[eventType] or @.default
 
+  trigger: (myo, eventData) ->
+    myo.trigger(eventData)
+
   # handlers
   arm_recognized: (myo, eventData) ->
     myo.session.onArmRecognized(eventData.arm, eventData.x_direction, eventData.timestamp)
-    myo.trigger('arm_recognized', eventData)
+    @trigger(myo, 'arm_recognized', eventData)
 
   arm_lost: (myo, eventData) ->
     @removeSession(myo)
-    myo.trigger('arm_lost', eventData)
+    @trigger(myo, 'arm_lost', eventData)
 
   paired: (myo, eventData) ->
-    myo.trigger('paired', eventData)
+    @trigger(myo, 'paired', eventData)
 
   pose: (myo, eventData) ->
     myo.session.pose = eventData.pose
-    myo.trigger('pose', eventData.pose)
+    @trigger(myo, 'pose', eventData.pose)
 
   orientation: (myo, eventData) ->
-    myo.trigger('orientation', eventData)
+    @trigger(myo, 'orientation', eventData)
 
   rssi: (myo, eventData) ->
-    myo.trigger('bluetooth_strength', eventData.rssi)
+    @trigger(myo, 'bluetooth_strength', eventData.rssi)
 
   connected: (myo, eventData) ->
     myo.session.onConnected(eventData.version, eventData.timestamp)
-    myo.trigger('connected', eventData)
+    @trigger(myo, 'connected', eventData)
 
   disconnected: (myo, eventData) ->
     # destroy myo instance?
     @removeSession(myo)
-    myo.trigger('disconnected', eventData)
+    @trigger(myo, 'disconnected', eventData)
 
   default: (myo, eventData) ->
     console.log('Unhandled event:', eventData)
@@ -183,13 +195,13 @@ class ExtendedProxyEventManager extends ProxyEventManager
     @imu(myo, imuData)
 
   gyroscope: (myo, eventData) ->
-    myo.trigger('gyroscope', eventData)
+    @trigger(myo, 'gyroscope', eventData)
 
   accelerometer: (myo, eventData) ->
-    myo.trigger('accelerometer', eventData)
+    @trigger(myo, 'accelerometer', eventData)
 
   imu: (myo, eventData) ->
-    myo.trigger('imu', eventData)
+    @trigger(myo, 'imu', eventData)
 
 
 class ExperimentalProxyEventManager extends ExtendedProxyEventManager
@@ -256,10 +268,10 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
       state.wasRight = false
 
   slap_left: (myo, eventData) ->
-    myo.trigger('slap_left', eventData)
+    @trigger(myo, 'slap_left', eventData)
 
   double_tap: (myo, eventData) ->
-    myo.trigger('double_tap', eventData)
+    @trigger(myo, 'double_tap', eventData)
 
     # also reset myo's orientation ?
     myo.zeroOrientation()

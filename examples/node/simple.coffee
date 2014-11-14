@@ -1,11 +1,13 @@
-olorin = require('../../build/olorin')
-connection = require('../../build/connection')
-events = require('../../build/events')
+olorin = require('../../src/olorin')
+connection = require('../../src/connection')
+events = require('../../src/events')
 
+try
+  hub = new olorin.Hub({
+    proxyEventManager: new events.ExperimentalProxyEventManager()
+  })
+catch
 
-hub = new olorin.Hub({
-  proxyEventManager: new events.ExperimentalProxyEventManager()
-})
 myo = hub.create()
 
 myo.on('arm_recognized', (event) ->

@@ -1881,7 +1881,8 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
   var Hub, Myo, connection, events, _,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   _ = require('underscore');
 
@@ -1957,26 +1958,34 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
       return this.proxyEventManager.handle(myo, eventData);
     };
 
-    Hub.prototype.create = function(configuration) {
-      var newMyo;
-      newMyo = new Myo(this, configuration);
-      this.myos[newMyo.id] = newMyo;
-      this.subscriptions.push(newMyo.on('command', (function(_this) {
+    Hub.prototype.registerMyo = function(myo) {
+      var _ref;
+      if (_ref = myo.id, __indexOf.call(this.myos, _ref) >= 0) {
+        throw new Error('Myo already registered');
+      }
+      this.myos[myo.id] = myo;
+      this.subscriptions.push(myo.on('command', (function(_this) {
         return function(command, kwargs) {
           var data;
           data = {
             command: command,
-            myo: newMyo.id
+            myo: myo.id
           };
           _.extend(data, kwargs);
           return _this.connection.send(JSON.stringify(['command', data]));
         };
       })(this)));
-      this.subscriptions.push(newMyo.on('destroy', (function(_this) {
+      return this.subscriptions.push(myo.on('destroy', (function(_this) {
         return function() {
-          return _this.myos[newMyo.id] = null;
+          return _this.myos[myo.id] = null;
         };
       })(this)));
+    };
+
+    Hub.prototype.create = function(configuration) {
+      var newMyo;
+      newMyo = new Myo(this, configuration);
+      this.registerMyo(newMyo);
       return newMyo;
     };
 

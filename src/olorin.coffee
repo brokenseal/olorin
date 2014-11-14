@@ -50,7 +50,7 @@ class Hub
       @connection = new connection.Connection()
 
     if not @proxyEventManager
-      # add a default prxy event manage to this hub
+      # add a default proxy event manage to this hub
       @proxyEventManager = new events.ProxyEventManager()
 
     @subscriptions.push(@connection.on('message', @onMessage))
@@ -63,22 +63,28 @@ class Hub
 
     @proxyEventManager.handle(myo, eventData)
 
-  create: (configuration) ->
-    newMyo = new Myo(@, configuration)
-    @myos[newMyo.id] = newMyo
+  registerMyo: (myo) ->
+    if myo.id in @myos
+      throw new Error('Myo already registered')
 
-    @subscriptions.push(newMyo.on('command', (command, kwargs) =>
+    @myos[myo.id] = myo
+
+    @subscriptions.push(myo.on('command', (command, kwargs) =>
       data = {
         command: command,
-        myo: newMyo.id
+        myo: myo.id
       }
       _.extend(data, kwargs)
       @connection.send(JSON.stringify(['command', data]))
     ))
 
-    @subscriptions.push(newMyo.on('destroy', =>
-      @myos[newMyo.id] = null
+    @subscriptions.push(myo.on('destroy', =>
+      @myos[myo.id] = null
     ))
+
+  create: (configuration) ->
+    newMyo = new Myo(@, configuration)
+    @registerMyo(newMyo)
     return newMyo
 
   destroy: ->
