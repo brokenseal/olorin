@@ -1,6 +1,7 @@
-olorin = require('../../src/olorin')
-connection = require('../../src/connection')
-events = require('../../src/events')
+olorin = require('../../build/olorin')
+connection = require('../../build/connection')
+events = require('../../build/events')
+
 
 hub = new olorin.Hub({
   proxyEventManager: new events.ExperimentalProxyEventManager()

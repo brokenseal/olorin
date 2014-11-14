@@ -5,6 +5,7 @@ sourceMaps = require('gulp-sourcemaps')
 mocha = require('gulp-mocha')
 coffeelint = require('gulp-coffeelint')
 coffeeify = require('gulp-coffeeify')
+uglify = require('gulp-uglify')
 
 
 gulp.task('coffee', ->
@@ -17,8 +18,10 @@ gulp.task('coffee', ->
 )
 
 gulp.task('browserify', ->
+  # I will might need to go back to vanilla browserify since I can't add source maps this way
   gulp.src('src/olorin.coffee')
     .pipe(coffeeify())
+#    .pipe(uglify())
     .pipe(gulp.dest('build/browser'))
 )
 
