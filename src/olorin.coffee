@@ -2,6 +2,7 @@
 
 _ = require('underscore')
 events = require('./events')
+proxy = require('./events/proxy')
 connection = require('./connection')
 
 
@@ -17,11 +18,18 @@ class Myo extends events.Events
     @configuration = _.extend({}, Myo.defaultConfiguration, configuration)
     @id = Myo.id++  # not sure about this one
     @session = null
+    @hub.registerMyo(@)
 
   vibrate: (intensity='medium') ->
     @trigger('command', 'vibrate', {
       type: intensity
     })
+
+  getArm: ->
+    return @session.arm || 'unknown'
+
+  getXDirection: ->
+    return @session.x_direction || 'unknown'
 
   requestBluetoothStrength: ->
     @trigger('command', 'request_rssi')
@@ -41,6 +49,7 @@ class Hub
   # An hub is responsible to keep track of all the myos created and to deliver
   # messages to the correct myo
   # @param {Connection} connection
+  # @param {ProxyEventManager} proxyEventManager
   constructor: ({@connection, @proxyEventManager}) ->
     @myos = {}
     @subscriptions = []
@@ -51,7 +60,7 @@ class Hub
 
     if not @proxyEventManager
       # add a default proxy event manage to this hub
-      @proxyEventManager = new events.ProxyEventManager()
+      @proxyEventManager = new proxy.ProxyEventManager()
 
     @subscriptions.push(@connection.on('message', @onMessage))
 
@@ -65,7 +74,8 @@ class Hub
 
   registerMyo: (myo) ->
     if myo.id in @myos
-      throw new Error('Myo already registered')
+      # fail silently
+      return
 
     @myos[myo.id] = myo
 

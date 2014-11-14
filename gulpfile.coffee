@@ -39,7 +39,7 @@ gulp.task('lint', ->
 )
 
 gulp.task('watch', ->
-  gulp.watch('src/*.coffee', ['test'])
+  gulp.watch('**/*.coffee', ['test'])
 )
 
 gulp.task('build', ['coffee', 'browserify'], ->

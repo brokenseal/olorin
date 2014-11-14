@@ -2,78 +2,8 @@
 
 _ = require('underscore')
 assert = require('assert')
-
-
-class Subscription
-  constructor: (@callback, @index, @subscriptionList) ->
-
-  invoke: (args...)->
-    @callback(args...)
-
-  dispose: ->
-    @subscriptionList.splice(@index, 0)
-
-
-class Events
-  constructor: ->
-    @events = {}
-
-  on: (eventName, listener) ->
-    if not @events[eventName]
-      @events[eventName] = []  # new subscription list for this new event
-
-    subscriptionList = @events[eventName]
-    subscription = new Subscription(
-      listener,
-      subscriptionList.length,
-      subscriptionList
-    )
-    subscriptionList.push(subscription)
-    return subscription
-
-  once: (eventName, listener) ->
-    subscription = @on(eventName, (args...)->
-      subscription.dispose()
-      listener(args...)
-    )
-    return subscription
-
-  trigger: (eventName, args...) ->
-    subscriptionList = @events[eventName] or []
-    len = subscriptionList.length
-
-    while len--
-      subscription = subscriptionList[len]
-      subscription.invoke(args...)
-
-  off: (eventName) ->
-    # this can be used to remove all subscriptions to a specific event, to
-    # dispose single subscription use the dispose method on them
-    @events[eventName] = []
-
-
-class MyoEventHandler
-  # this just a simple interface for new event handlers
-  invoke: (myo, eventName, eventData) ->
-    throw new Error('Not implemented error')
-
-
-class SimpleProxyEventHandler extends MyoEventHandler
-  invoke: (myo, eventName, eventData) ->
-    myo.trigger(eventName, eventData)
-
-
-class DifferentNameEventHandler extends MyoEventHandler
-  constructor: (@eventName) ->
-  invoke: (myo, eventName, eventData) ->
-    myo.trigger(@eventName, eventData)
-
-
-class AddBehaviorEventHandler extends MyoEventHandler
-  constructor: (@additionalBehavior) ->
-  invoke: (myo, eventName, eventData) ->
-    @additionalBehavior(myo, eventData)
-    myo.trigger(@eventName, eventData)
+session = require('../session')
+handlers = require('./handlers')
 
 
 class ProxyEventManager
@@ -87,12 +17,13 @@ class ProxyEventManager
     @initSession(myo, eventData)
     myo.session.messagesQueue.push(eventData)
     handler = @getHandler(eventData.type)
-    assert(handler instanceof MyoEventHandler)
+    console.log(handler)
+    assert(handler instanceof handlers.MyoEventHandler, 'Expected instance of MyoEventHandler, found ' + typeof handler)
     handler.invoke(myo, eventData.type, eventData)
 
   initSession: (myo, eventData) ->
     if not myo.session
-      myo.session = new Session()
+      myo.session = new session.Session()
       return false
     return true
 
@@ -103,26 +34,26 @@ class ProxyEventManager
     myo.trigger(eventData)
 
   # handlers
-  paired: new SimpleProxyEventHandler()
-  orientation: new SimpleProxyEventHandler()
-  rssi: new DifferentNameEventHandler('bluetooth_strength')
-  pose: new AddBehaviorEventHandler((myo, eventData)->
+  paired: new handlers.SimpleProxyEventHandler()
+  orientation: new handlers.SimpleProxyEventHandler()
+  rssi: new handlers.DifferentNameEventHandler('bluetooth_strength')
+  pose: new handlers.AddBehaviorEventHandler((myo, eventData)->
     myo.session.pose = eventData.pose
   )
-  arm_recognized: new AddBehaviorEventHandler((myo, eventData)->
+  arm_recognized: new handlers.AddBehaviorEventHandler((myo, eventData)->
     myo.session.onArmRecognized(eventData.arm, eventData.x_direction, eventData.timestamp)
   )
-  arm_lost: new AddBehaviorEventHandler((myo, eventData)->
-    removeSession(myo)
+  arm_lost: new handlers.AddBehaviorEventHandler((myo, eventData)->
+    session.Session.removeSession(myo)
   )
-  connected: new AddBehaviorEventHandler((myo, eventData)->
+  connected: new handlers.AddBehaviorEventHandler((myo, eventData)->
     myo.session.onConnected(eventData.version, eventData.timestamp)
   )
-  disconnected: new AddBehaviorEventHandler((myo, eventData)->
+  disconnected: new handlers.AddBehaviorEventHandler((myo, eventData)->
     # destroy myo instance?
-    removeSession(myo)
+    Session.removeSession(myo)
   )
-  default: new AddBehaviorEventHandler((myo, eventData)->
+  default: new handlers.AddBehaviorEventHandler((myo, eventData)->
     console.log('Unhandled event:', eventData)
   )
 
@@ -243,18 +174,8 @@ class ExperimentalProxyEventManager extends ExtendedProxyEventManager
     myo.zeroOrientation()
 
 
-removeSession = (myo) ->
-  if myo.session
-    myo.session.close()
-
-  myo.session = null
-
 _.extend(exports, {
-  Events: Events
-  Subscription: Subscription
   ProxyEventManager: ProxyEventManager
   ExtendedProxyEventManager: ExtendedProxyEventManager
   ExperimentalProxyEventManager: ExperimentalProxyEventManager
-  MyoEventHandler: MyoEventHandler
-  AddBehaviorEventHandler: AddBehaviorEventHandler
 })

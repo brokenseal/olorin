@@ -1,6 +1,7 @@
 _ = require('underscore')
 connection = require("../src/connection")
-events = require("../src/events")
+events = require("../src/events/main")
+proxy = require("../src/events/proxy")
 
 
 class FakeWebSocket
@@ -18,7 +19,7 @@ class FakeConnection extends connection.Connection
   SocketClass: FakeWebSocket
 
 
-class FakeProxyEventManager extends events.ProxyEventManager
+class FakeProxyEventManager extends proxy.ProxyEventManager
 
 _.extend(exports, {
   FakeConnection: FakeConnection

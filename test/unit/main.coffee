@@ -1,5 +1,7 @@
 assert = require("assert")
 events = require("../../src/events")
+handlers = require("../../src/events/handlers")
+proxy = require("../../src/events/proxy")
 olorin = require("../../src/olorin")
 connection = require("../../src/connection")
 sinon = require("sinon")
@@ -34,10 +36,11 @@ describe('Hub', ->
         data: JSON.stringify([hub.connection.messageTypes.event, eventData])
       }
 
-      hub.proxyEventManager[eventName] = (myo, data) ->
-        assert(data.type is eventData.type)
-        assert(data.test is eventData.test)
+      hub.proxyEventManager[eventName] = new handlers.AddBehaviorEventHandler((myo, data) ->
+        assert(data.type is eventData.type, 'Data type not equal: ' + data.type + ' != ' + eventData.type)
+#        assert(data.test is eventData.test)
         done()
+      )
 
       # trigger the event from the socket
       hub.connection.socket.message(message)
